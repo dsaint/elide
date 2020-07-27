@@ -699,6 +699,51 @@ public class AggregationDataStoreIntegrationTest extends IntegrationTest {
     }
 
     @Test
+    public void multiTimeDimensionTest() throws IOException {
+        String graphQLRequest = document(
+                selection(
+                        field(
+                                "playerStats",
+                                selections(
+                                        field("recordedDate",
+                                                arguments(
+                                                        argument("grain", "\"MONTH\"")
+                                                )
+                                        ),
+                                        field("updatedDate",
+                                                arguments(
+                                                        argument("grain", "\"DAY\"")
+                                                )
+                                        )
+                                )
+                        )
+                )
+        ).toQuery();
+
+        String expected = document(
+                selections(
+                        field(
+                                "playerStats",
+                                selections(
+                                        field("recordedDate", "2019-07-01T00:00Z"),
+                                        field("updatedDate", "2019-10-12T00:00Z")
+                                ),
+                                selections(
+                                        field("recordedDate", "2019-07-01T00:00Z"),
+                                        field("updatedDate", "2020-07-12T00:00Z")
+                                ),
+                                selections(
+                                        field("recordedDate", "2019-07-01T00:00Z"),
+                                        field("updatedDate", "2020-01-12T00:00Z")
+                                )
+                        )
+                )
+        ).toResponse();
+
+        runQueryWithExpectedResult(graphQLRequest, expected);
+    }
+
+    @Test
     public void jsonApiAggregationTest() {
         given()
                 .accept("application/vnd.api+json")
@@ -777,8 +822,8 @@ public class AggregationDataStoreIntegrationTest extends IntegrationTest {
                 .body(
                         "included.attributes.expression",
                         hasItems(
-                                "PARSEDATETIME(FORMATDATETIME(%s, 'yyyy-MM-dd'), 'yyyy-MM-dd')",
-                                "PARSEDATETIME(FORMATDATETIME(%s, 'yyyy-MM-01'), 'yyyy-MM-dd')"));
+                                "PARSEDATETIME(FORMATDATETIME({{}}, 'yyyy-MM-dd'), 'yyyy-MM-dd')",
+                                "PARSEDATETIME(FORMATDATETIME({{    }}, 'yyyy-MM-01'), 'yyyy-MM-dd')"));
     }
     @Test
     public void metricMetaDataTest() {
