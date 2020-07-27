@@ -5,12 +5,15 @@
  */
 package com.yahoo.elide.async.service;
 
+import static com.yahoo.elide.core.EntityDictionary.NO_VERSION;
+
 import com.yahoo.elide.Elide;
 import com.yahoo.elide.async.models.AsyncQuery;
 import com.yahoo.elide.async.models.QueryStatus;
 import com.yahoo.elide.core.DataStoreTransaction;
+import com.yahoo.elide.core.RequestScope;
 import com.yahoo.elide.core.TransactionRegistry;
-
+import com.yahoo.elide.jsonapi.models.JsonApiDocument;
 import com.google.common.collect.Sets;
 
 import lombok.AllArgsConstructor;
@@ -27,6 +30,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
 
 /**
  * Runnable thread for cancelling AsyncQuery transactions
@@ -76,7 +82,12 @@ public class AsyncQueryCancelThread implements Runnable {
 
             queriesToCancel.stream()
                .forEach((tx) -> {
-                   transactionRegistry.getRunningTransaction(tx).cancel();
+                   JsonApiDocument jsonApiDoc = new JsonApiDocument();
+                   MultivaluedMap<String, String> queryParams = new MultivaluedHashMap<String, String>();
+                   RequestScope scope = new RequestScope("query", NO_VERSION, jsonApiDoc,
+                           transactionRegistry.getRunningTransaction(tx), null, queryParams,
+                           tx, elide.getElideSettings());
+                   transactionRegistry.getRunningTransaction(tx).cancel(scope);
                });
 
         } catch (Exception e) {
