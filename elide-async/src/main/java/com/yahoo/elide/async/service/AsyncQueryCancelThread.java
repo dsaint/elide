@@ -23,8 +23,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.text.Format;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -63,10 +67,10 @@ public class AsyncQueryCancelThread implements Runnable {
 
             TransactionRegistry transactionRegistry = elide.getTransactionRegistry();
             Map<UUID, DataStoreTransaction> runningTransactionMap = transactionRegistry.getRunningTransactions();
-
-            String filterExpression = "status=in=(" + QueryStatus.CANCELLED.toString() + ","
-                    + QueryStatus.PROCESSING.toString() + ","
-                    + QueryStatus.QUEUED.toString() + ")";
+            String filterDateFormatted = evaluateFormattedFilterDate(Calendar.SECOND, 2 * maxRunTimeSeconds);
+            String filterExpression = "status=in=(" + QueryStatus.PROCESSING.toString() + ","
+                    + QueryStatus.QUEUED.toString() + "),status=in=(" + QueryStatus.CANCELLED.toString()
+                    + ");createdOn=ge='" + filterDateFormatted + "'";
             FilterExpression filter = filterParser.parseFilterExpression(filterExpression,
                     AsyncQuery.class, false);
             Collection<AsyncQuery> asyncQueryCollection = asyncQueryDao.getActiveAsyncQueryCollection(filter);
@@ -95,5 +99,22 @@ public class AsyncQueryCancelThread implements Runnable {
         } catch (Exception e) {
             log.error("Exception: {}", e);
         }
+    }
+
+    /**
+     * Evaluates and subtracts the amount based on the calendar unit and amount from current date.
+     * @param calendarUnit Enum such as Calendar.SECOND
+     * @param amount Amount of days to be subtracted from current time
+     * @return formatted filter date
+     */
+     private String evaluateFormattedFilterDate(int calendarUnit, int amount) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(new Date());
+        cal.add(calendarUnit, - amount);
+        Date filterDate = cal.getTime();
+        Format dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        String filterDateFormatted = dateFormat.format(filterDate);
+        log.debug("FilterDateFormatted = {}", filterDateFormatted);
+        return filterDateFormatted;
     }
 }
