@@ -32,8 +32,6 @@ public class AsyncQueryCleanerThreadTest {
     private AsyncQueryCleanerThread cleanerThread;
     private Elide elide;
     private AsyncQueryDAO asyncQueryDao;
-    private EntityDictionary dictionary;
-    private RSQLFilterDialect filterParser;
 
     @BeforeEach
     public void setupMocks() {
@@ -47,8 +45,8 @@ public class AsyncQueryCleanerThreadTest {
                         .build());
 
         asyncQueryDao = mock(DefaultAsyncQueryDAO.class);
-        dictionary = mock(EntityDictionary.class);
-        filterParser = mock(RSQLFilterDialect.class);
+        EntityDictionary dictionary = mock(EntityDictionary.class);
+        RSQLFilterDialect filterParser = mock(RSQLFilterDialect.class);
         cleanerThread = new AsyncQueryCleanerThread(7, elide, 7, asyncQueryDao, dictionary, filterParser);
 
     }

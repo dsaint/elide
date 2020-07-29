@@ -31,8 +31,6 @@ public class AsyncQueryCancelThreadTest {
     private AsyncQueryCancelThread cancelThread;
     private Elide elide;
     private AsyncQueryDAO asyncQueryDao;
-    private EntityDictionary dictionary;
-    private RSQLFilterDialect filterParser;
 
     @BeforeEach
     public void setupMocks() {
@@ -46,8 +44,8 @@ public class AsyncQueryCancelThreadTest {
                         .build());
 
         asyncQueryDao = mock(DefaultAsyncQueryDAO.class);
-        dictionary = mock(EntityDictionary.class);
-        filterParser = mock(RSQLFilterDialect.class);
+        EntityDictionary dictionary = mock(EntityDictionary.class);
+        RSQLFilterDialect filterParser = mock(RSQLFilterDialect.class);
         cancelThread = new AsyncQueryCancelThread(7, elide, asyncQueryDao, dictionary, filterParser);
     }
 
