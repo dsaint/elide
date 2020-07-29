@@ -86,7 +86,7 @@ public class AsyncExecutorServiceTest {
         AsyncQuery queryObj = mock(AsyncQuery.class);
         String query = "/group?sort=commonName&fields%5Bgroup%5D=commonName,description";
         String id = "edc4a871-dff2-4054-804e-d80075cf827d";
-        UUID uuid = UUID.fromString("edc4a871-dff2-4054-804e-d80075cf827d");
+        UUID uuid = UUID.fromString(id);
         when(queryObj.getQuery()).thenReturn(query);
         when(queryObj.getId()).thenReturn(id);
         when(queryObj.getRequestId()).thenReturn(uuid);

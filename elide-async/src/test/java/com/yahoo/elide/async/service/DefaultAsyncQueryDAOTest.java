@@ -23,6 +23,7 @@ import com.yahoo.elide.core.DataStoreTransaction;
 import com.yahoo.elide.core.EntityDictionary;
 import com.yahoo.elide.core.RequestScope;
 import com.yahoo.elide.core.filter.dialect.RSQLFilterDialect;
+import com.yahoo.elide.core.filter.expression.FilterExpression;
 import com.yahoo.elide.security.checks.Check;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -42,12 +43,14 @@ public class DefaultAsyncQueryDAOTest {
     private AsyncQueryResult asyncQueryResult;
     private DataStoreTransaction tx;
     private EntityDictionary dictionary;
+    private FilterExpression filter;
 
     @BeforeEach
     public void setupMocks() {
         dataStore = mock(DataStore.class);
         asyncQuery = mock(AsyncQuery.class);
         asyncQueryResult = mock(AsyncQueryResult.class);
+        filter = mock(FilterExpression.class);
         tx = mock(DataStoreTransaction.class);
 
         Map<String, Class<? extends Check>> checkMappings = new HashMap<>();
@@ -73,7 +76,7 @@ public class DefaultAsyncQueryDAOTest {
     @Test
     public void testAsyncQueryCleanerThreadSet() {
         assertEquals(elide, asyncQueryDAO.getElide());
-        assertEquals(dictionary, asyncQueryDAO.getDictionary());
+        assertEquals(dataStore, asyncQueryDAO.getDataStore());
     }
 
     @Test
@@ -89,8 +92,7 @@ public class DefaultAsyncQueryDAOTest {
    public void testUpdateStatusAsyncQueryCollection() {
        Iterable<Object> loaded = Arrays.asList(asyncQuery, asyncQuery);
        when(tx.loadObjects(any(), any())).thenReturn(loaded);
-
-       asyncQueryDAO.updateStatusAsyncQueryCollection("status=in=(PROCESSING,QUEUED);createdOn=le='2020-04-22T13:28Z'", QueryStatus.TIMEDOUT);
+       asyncQueryDAO.updateStatusAsyncQueryCollection(filter, QueryStatus.TIMEDOUT);
 
        verify(tx, times(2)).save(any(AsyncQuery.class), any(RequestScope.class));
        verify(asyncQuery, times(2)).setStatus(QueryStatus.TIMEDOUT);
@@ -101,7 +103,7 @@ public class DefaultAsyncQueryDAOTest {
         Iterable<Object> loaded = Arrays.asList(asyncQuery, asyncQuery, asyncQuery);
         when(tx.loadObjects(any(), any())).thenReturn(loaded);
 
-        asyncQueryDAO.deleteAsyncQueryAndResultCollection("createdOn=le='2020-03-23T02:02Z'");
+        asyncQueryDAO.deleteAsyncQueryAndResultCollection(filter);
 
         verify(dataStore, times(1)).beginTransaction();
         verify(tx, times(1)).loadObjects(any(), any());
@@ -124,7 +126,7 @@ public class DefaultAsyncQueryDAOTest {
     public void testGetActiveAsyncQueryCollection() {
         Iterable<Object> loaded = Arrays.asList(asyncQuery, asyncQuery, asyncQuery);
         when(tx.loadObjects(any(), any())).thenReturn(loaded);
-        asyncQueryDAO.getActiveAsyncQueryCollection("status=in=(CANCELLED,PROCESSING,QUEUED);createdOn=le='2020-03-23T02:02Z'");
+        asyncQueryDAO.getActiveAsyncQueryCollection(filter);
         verify(dataStore, times(1)).beginTransaction();
         verify(tx, times(1)).loadObjects(any(), any());
     }

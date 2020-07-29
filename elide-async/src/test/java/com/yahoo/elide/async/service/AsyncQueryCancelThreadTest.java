@@ -6,7 +6,7 @@
 package com.yahoo.elide.async.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -16,6 +16,7 @@ import com.yahoo.elide.ElideSettingsBuilder;
 import com.yahoo.elide.async.models.AsyncQuery;
 import com.yahoo.elide.core.EntityDictionary;
 import com.yahoo.elide.core.datastore.inmemory.HashMapDataStore;
+import com.yahoo.elide.core.filter.dialect.RSQLFilterDialect;
 import com.yahoo.elide.security.checks.Check;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,8 @@ public class AsyncQueryCancelThreadTest {
     private AsyncQueryCancelThread cancelThread;
     private Elide elide;
     private AsyncQueryDAO asyncQueryDao;
+    private EntityDictionary dictionary;
+    private RSQLFilterDialect filterParser;
 
     @BeforeEach
     public void setupMocks() {
@@ -43,7 +46,9 @@ public class AsyncQueryCancelThreadTest {
                         .build());
 
         asyncQueryDao = mock(DefaultAsyncQueryDAO.class);
-        cancelThread = new AsyncQueryCancelThread(7, elide, asyncQueryDao);
+        dictionary = mock(EntityDictionary.class);
+        filterParser = mock(RSQLFilterDialect.class);
+        cancelThread = new AsyncQueryCancelThread(7, elide, asyncQueryDao, dictionary, filterParser);
     }
 
     @Test
@@ -56,6 +61,6 @@ public class AsyncQueryCancelThreadTest {
     @Test
     public void testCancelAsyncQuery() {
         cancelThread.cancelAsyncQuery();
-        verify(asyncQueryDao, times(1)).getActiveAsyncQueryCollection(anyString());
+        verify(asyncQueryDao, times(1)).getActiveAsyncQueryCollection(any());
     }
 }

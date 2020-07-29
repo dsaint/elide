@@ -6,6 +6,8 @@
 package com.yahoo.elide.async.service;
 
 import com.yahoo.elide.Elide;
+import com.yahoo.elide.core.EntityDictionary;
+import com.yahoo.elide.core.filter.dialect.RSQLFilterDialect;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,13 +34,17 @@ public class AsyncCleanerService {
     private AsyncCleanerService(Elide elide, Integer maxRunTimeSeconds, Integer queryCleanupDays,
             Integer cancelDelaySeconds, AsyncQueryDAO asyncQueryDao) {
 
+
+        EntityDictionary dictionary = elide.getElideSettings().getDictionary();
+        RSQLFilterDialect filterParser = new RSQLFilterDialect(dictionary);
+
         //If query is still running for twice than maxRunTime, then interrupt did not work due to host/app crash.
         int queryRunTimeThresholdMinutes = Math.round((maxRunTimeSeconds * 2) / 60);
 
         // Setting up query cleaner that marks long running query as TIMEDOUT.
         ScheduledExecutorService cleaner = Executors.newSingleThreadScheduledExecutor();
         AsyncQueryCleanerThread cleanUpTask = new AsyncQueryCleanerThread(queryRunTimeThresholdMinutes, elide,
-            queryCleanupDays, asyncQueryDao);
+            queryCleanupDays, asyncQueryDao, dictionary, filterParser);
 
         // Since there will be multiple hosts running the elide service,
         // setting up random delays to avoid all of them trying to cleanup at the same time.
@@ -55,7 +61,8 @@ public class AsyncCleanerService {
         //Setting up query cancel service that cancels long running queries based on status or runtime
         ScheduledExecutorService cancellation = Executors.newSingleThreadScheduledExecutor();
 
-        AsyncQueryCancelThread cancelTask = new AsyncQueryCancelThread(maxRunTimeSeconds, elide, asyncQueryDao);
+        AsyncQueryCancelThread cancelTask = new AsyncQueryCancelThread(maxRunTimeSeconds, elide, asyncQueryDao,
+            dictionary, filterParser);
 
         cancellation.scheduleWithFixedDelay(cancelTask, 0, cancelDelaySeconds, TimeUnit.SECONDS);
     }

@@ -7,7 +7,6 @@ package com.yahoo.elide.async.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,6 +17,7 @@ import com.yahoo.elide.async.models.AsyncQuery;
 import com.yahoo.elide.async.models.QueryStatus;
 import com.yahoo.elide.core.EntityDictionary;
 import com.yahoo.elide.core.datastore.inmemory.HashMapDataStore;
+import com.yahoo.elide.core.filter.dialect.RSQLFilterDialect;
 import com.yahoo.elide.security.checks.Check;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +32,8 @@ public class AsyncQueryCleanerThreadTest {
     private AsyncQueryCleanerThread cleanerThread;
     private Elide elide;
     private AsyncQueryDAO asyncQueryDao;
+    private EntityDictionary dictionary;
+    private RSQLFilterDialect filterParser;
 
     @BeforeEach
     public void setupMocks() {
@@ -45,7 +47,10 @@ public class AsyncQueryCleanerThreadTest {
                         .build());
 
         asyncQueryDao = mock(DefaultAsyncQueryDAO.class);
-        cleanerThread = new AsyncQueryCleanerThread(7, elide, 7, asyncQueryDao);
+        dictionary = mock(EntityDictionary.class);
+        filterParser = mock(RSQLFilterDialect.class);
+        cleanerThread = new AsyncQueryCleanerThread(7, elide, 7, asyncQueryDao, dictionary, filterParser);
+
     }
 
     @Test
@@ -59,14 +64,12 @@ public class AsyncQueryCleanerThreadTest {
     @Test
     public void testDeleteAsyncQuery() {
         cleanerThread.deleteAsyncQuery();
-
-        verify(asyncQueryDao, times(1)).deleteAsyncQueryAndResultCollection(anyString());
+        verify(asyncQueryDao, times(1)).deleteAsyncQueryAndResultCollection(any());
     }
 
     @Test
     public void timeoutAsyncQuery() {
         cleanerThread.timeoutAsyncQuery();
-
-        verify(asyncQueryDao, times(1)).updateStatusAsyncQueryCollection(anyString(), any(QueryStatus.class));
+        verify(asyncQueryDao, times(1)).updateStatusAsyncQueryCollection(any(), any(QueryStatus.class));
     }
 }

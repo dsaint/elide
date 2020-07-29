@@ -240,7 +240,7 @@ public interface ElideStandaloneSettings {
      *
      * @return Default: 300
      */
-    default Integer getAsyncQueryCancelSeconds() {
+    default Integer getAsyncQueryCancelCheckIntervalSeconds() {
         return 300;
     }
 

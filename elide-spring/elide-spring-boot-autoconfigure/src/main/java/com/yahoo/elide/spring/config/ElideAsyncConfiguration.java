@@ -84,7 +84,7 @@ public class ElideAsyncConfiguration {
             AsyncQueryDAO asyncQueryDao) {
         AsyncCleanerService.init(elide, settings.getAsync().getMaxRunTimeSeconds(),
                 settings.getAsync().getQueryCleanupDays(),
-                settings.getAsync().getQueryCancellationSeconds(), asyncQueryDao);
+                settings.getAsync().getQueryCancellationIntervalSeconds(), asyncQueryDao);
         return AsyncCleanerService.getInstance();
     }
 

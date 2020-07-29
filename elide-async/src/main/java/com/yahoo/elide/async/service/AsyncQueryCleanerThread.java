@@ -6,7 +6,11 @@
 package com.yahoo.elide.async.service;
 
 import com.yahoo.elide.Elide;
+import com.yahoo.elide.async.models.AsyncQuery;
 import com.yahoo.elide.async.models.QueryStatus;
+import com.yahoo.elide.core.EntityDictionary;
+import com.yahoo.elide.core.filter.dialect.RSQLFilterDialect;
+import com.yahoo.elide.core.filter.expression.FilterExpression;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -31,7 +35,8 @@ public class AsyncQueryCleanerThread implements Runnable {
     private Elide elide;
     private int queryCleanupDays;
     private AsyncQueryDAO asyncQueryDao;
-
+    private EntityDictionary dictionary;
+    private RSQLFilterDialect filterParser;
     @Override
     public void run() {
         deleteAsyncQuery();
@@ -44,11 +49,16 @@ public class AsyncQueryCleanerThread implements Runnable {
     @SuppressWarnings("unchecked")
     protected void deleteAsyncQuery() {
 
-        String cleanupDateFormatted = evaluateFormattedFilterDate(Calendar.DATE, queryCleanupDays);
+        try {
+            String cleanupDateFormatted = evaluateFormattedFilterDate(Calendar.DATE, queryCleanupDays);
+            String filterExpression = "createdOn=le='" + cleanupDateFormatted + "'";
 
-        String filterExpression = "createdOn=le='" + cleanupDateFormatted + "'";
-
-        asyncQueryDao.deleteAsyncQueryAndResultCollection(filterExpression);
+            FilterExpression filter = filterParser.parseFilterExpression(filterExpression,
+                    AsyncQuery.class, false);
+            asyncQueryDao.deleteAsyncQueryAndResultCollection(filter);
+        } catch (Exception e) {
+            log.error("Exception: {}", e);
+        }
 
     }
 
@@ -59,11 +69,17 @@ public class AsyncQueryCleanerThread implements Runnable {
     @SuppressWarnings("unchecked")
     protected void timeoutAsyncQuery() {
 
-        String filterDateFormatted = evaluateFormattedFilterDate(Calendar.MINUTE, maxRunTimeMinutes);
-        String filterExpression = "status=in=(" + QueryStatus.PROCESSING.toString() + ","
-                + QueryStatus.QUEUED.toString() + ");createdOn=le='" + filterDateFormatted + "'";
+        try {
+            String filterDateFormatted = evaluateFormattedFilterDate(Calendar.MINUTE, maxRunTimeMinutes);
+            String filterExpression = "status=in=(" + QueryStatus.PROCESSING.toString() + ","
+                    + QueryStatus.QUEUED.toString() + ");createdOn=le='" + filterDateFormatted + "'";
 
-        asyncQueryDao.updateStatusAsyncQueryCollection(filterExpression, QueryStatus.TIMEDOUT);
+            FilterExpression filter = filterParser.parseFilterExpression(filterExpression,
+                    AsyncQuery.class, false);
+            asyncQueryDao.updateStatusAsyncQueryCollection(filter, QueryStatus.TIMEDOUT);
+        } catch (Exception e) {
+            log.error("Exception: {}", e);
+        }
     }
 
     /**
