@@ -28,7 +28,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -70,7 +69,7 @@ public class AsyncQueryCancelThread implements Runnable {
             String filterDateFormatted = evaluateFormattedFilterDate(Calendar.SECOND, 2 * maxRunTimeSeconds);
             String filterExpression = "status=in=(" + QueryStatus.PROCESSING.toString() + ","
                     + QueryStatus.QUEUED.toString() + "),status=in=(" + QueryStatus.CANCELLED.toString()
-                    + ");createdOn=ge='" + filterDateFormatted + "'";
+                    + ");updatedOn=ge='" + filterDateFormatted + "'";
             FilterExpression filter = filterParser.parseFilterExpression(filterExpression,
                     AsyncQuery.class, false);
             Collection<AsyncQuery> asyncQueryCollection = asyncQueryDao.getActiveAsyncQueryCollection(filter);
