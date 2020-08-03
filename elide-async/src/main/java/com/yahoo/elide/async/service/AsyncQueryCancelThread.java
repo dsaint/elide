@@ -14,6 +14,7 @@ import com.yahoo.elide.core.DataStoreTransaction;
 import com.yahoo.elide.core.EntityDictionary;
 import com.yahoo.elide.core.RequestScope;
 import com.yahoo.elide.core.TransactionRegistry;
+import com.yahoo.elide.core.filter.dialect.ParseException;
 import com.yahoo.elide.core.filter.dialect.RSQLFilterDialect;
 import com.yahoo.elide.core.filter.expression.FilterExpression;
 import com.yahoo.elide.jsonapi.models.JsonApiDocument;
@@ -23,9 +24,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import java.text.Format;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -66,13 +64,11 @@ public class AsyncQueryCancelThread implements Runnable {
 
             TransactionRegistry transactionRegistry = elide.getTransactionRegistry();
             Map<UUID, DataStoreTransaction> runningTransactionMap = transactionRegistry.getRunningTransactions();
-            String filterDateFormatted = evaluateFormattedFilterDate(Calendar.SECOND, 2 * maxRunTimeSeconds);
-            String filterExpression = "status=in=(" + QueryStatus.PROCESSING.toString() + ","
-                    + QueryStatus.QUEUED.toString() + "),status=in=(" + QueryStatus.CANCELLED.toString()
-                    + ");updatedOn=ge='" + filterDateFormatted + "'";
-            FilterExpression filter = filterParser.parseFilterExpression(filterExpression,
+            String filterExpressionStr = "status=in=(" + QueryStatus.PROCESSING.toString() + ","
+                    + QueryStatus.QUEUED.toString() + "," + QueryStatus.CANCELLED.toString() + ")";
+            FilterExpression filterExpression = filterParser.parseFilterExpression(filterExpressionStr,
                     AsyncQuery.class, false);
-            Collection<AsyncQuery> asyncQueryCollection = asyncQueryDao.getActiveAsyncQueryCollection(filter);
+            Collection<AsyncQuery> asyncQueryCollection = asyncQueryDao.getActiveAsyncQueryCollection(filterExpression);
 
             Set<UUID> runningTransactions = runningTransactionMap.keySet();
 
@@ -87,33 +83,27 @@ public class AsyncQueryCancelThread implements Runnable {
 
             queriesToCancel.stream()
                .forEach((tx) -> {
-                   JsonApiDocument jsonApiDoc = new JsonApiDocument();
-                   MultivaluedMap<String, String> queryParams = new MultivaluedHashMap<String, String>();
-                   RequestScope scope = new RequestScope("query", NO_VERSION, jsonApiDoc,
-                           transactionRegistry.getRunningTransaction(tx), null, queryParams,
-                           tx, elide.getElideSettings());
-                   transactionRegistry.getRunningTransaction(tx).cancel(scope);
+                       JsonApiDocument jsonApiDoc = new JsonApiDocument();
+                       MultivaluedMap<String, String> queryParams = new MultivaluedHashMap<String, String>();
+                       RequestScope scope = new RequestScope("query", NO_VERSION, jsonApiDoc,
+                               transactionRegistry.getRunningTransaction(tx), null, queryParams,
+                               tx, elide.getElideSettings());
+                       transactionRegistry.getRunningTransaction(tx).cancel(scope);
+                            /*
+                             * String filterRequestIdStr = "requestId=='"+tx+"';"; FilterExpression
+                             * filterExpressionRequestId =
+                             * filterParser.parseFilterExpression(filterRequestIdStr, AsyncQuery.class,
+                             * false);
+                             * asyncQueryDao.getAsyncQuery(filterExpressionRequestId).setStatus(QueryStatus.
+                             * CANCEL_COMPLETED);
+                             */
+                       asyncQueryCollection.stream().filter(query -> query.getRequestId() == tx)
+                             .iterator().next().setStatus(QueryStatus.CANCEL_COMPLETED);
+
                });
 
-        } catch (Exception e) {
-            log.error("Exception: {}", e);
+        } catch (ParseException e) {
+            log.error("ParseException: {}", e);
         }
-    }
-
-    /**
-     * Evaluates and subtracts the amount based on the calendar unit and amount from current date.
-     * @param calendarUnit Enum such as Calendar.SECOND
-     * @param amount Amount of days to be subtracted from current time
-     * @return formatted filter date
-     */
-     private String evaluateFormattedFilterDate(int calendarUnit, int amount) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(new Date());
-        cal.add(calendarUnit, - amount);
-        Date filterDate = cal.getTime();
-        Format dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        String filterDateFormatted = dateFormat.format(filterDate);
-        log.debug("FilterDateFormatted = {}", filterDateFormatted);
-        return filterDateFormatted;
     }
 }

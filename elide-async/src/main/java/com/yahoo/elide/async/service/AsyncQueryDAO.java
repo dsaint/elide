@@ -52,7 +52,7 @@ public interface AsyncQueryDAO {
     public Collection<AsyncQuery> updateStatusAsyncQueryCollection(FilterExpression filterExpression,
             QueryStatus status);
     /**
-     * This method gets a collection of AsyncQuery and objects from database with status QUEUED/PROCESSING and
+     * This method gets a collection of AsyncQuery and objects from database with status QUEUED/PROCESSING/CANCELLED and
      * returns the objects.
      * @param filterExpression filter expression to cancel AsyncQuery Objects based on
      * @return query object list updated

@@ -87,28 +87,24 @@ public class DefaultAsyncQueryDAO implements AsyncQueryDAO {
 
         Collection<AsyncQuery> asyncQueryList = null;
 
-        try {
 
-             asyncQueryList = (Collection<AsyncQuery>) executeInTransaction(dataStore,
-                        (tx, scope) -> {
-                 EntityProjection asyncQueryCollection = EntityProjection.builder()
-                         .type(AsyncQuery.class)
-                         .filterExpression(filterExpression)
-                         .build();
+         asyncQueryList = (Collection<AsyncQuery>) executeInTransaction(dataStore,
+                    (tx, scope) -> {
+             EntityProjection asyncQueryCollection = EntityProjection.builder()
+                     .type(AsyncQuery.class)
+                     .filterExpression(filterExpression)
+                     .build();
 
-                 Iterable<Object> loaded = tx.loadObjects(asyncQueryCollection, scope);
-                 Iterator<Object> itr = loaded.iterator();
+             Iterable<Object> loaded = tx.loadObjects(asyncQueryCollection, scope);
+             Iterator<Object> itr = loaded.iterator();
 
-                 while (itr.hasNext()) {
-                     AsyncQuery query = (AsyncQuery) itr.next();
-                     updateFunction.update(query);
-                     tx.save(query, scope);
-                 }
-                 return loaded;
-             });
-        } catch (Exception e) {
-            log.error("Exception: {}", e);
-        }
+             while (itr.hasNext()) {
+                 AsyncQuery query = (AsyncQuery) itr.next();
+                 updateFunction.update(query);
+                 tx.save(query, scope);
+             }
+             return loaded;
+         });
         return asyncQueryList;
     }
 
@@ -119,29 +115,24 @@ public class DefaultAsyncQueryDAO implements AsyncQueryDAO {
 
         Collection<AsyncQuery> asyncQueryList = null;
 
-        try {
+        asyncQueryList = (Collection<AsyncQuery>) executeInTransaction(dataStore, (tx, scope) -> {
 
-            asyncQueryList = (Collection<AsyncQuery>) executeInTransaction(dataStore, (tx, scope) -> {
+            EntityProjection asyncQueryCollection = EntityProjection.builder()
+                    .type(AsyncQuery.class)
+                    .filterExpression(filterExpression)
+                    .build();
 
-                EntityProjection asyncQueryCollection = EntityProjection.builder()
-                        .type(AsyncQuery.class)
-                        .filterExpression(filterExpression)
-                        .build();
+            Iterable<Object> loaded = tx.loadObjects(asyncQueryCollection, scope);
+            Iterator<Object> itr = loaded.iterator();
 
-                Iterable<Object> loaded = tx.loadObjects(asyncQueryCollection, scope);
-                Iterator<Object> itr = loaded.iterator();
-
-                while (itr.hasNext()) {
-                    AsyncQuery query = (AsyncQuery) itr.next();
-                    if (query != null) {
-                        tx.delete(query, scope);
-                    }
+            while (itr.hasNext()) {
+                AsyncQuery query = (AsyncQuery) itr.next();
+                if (query != null) {
+                    tx.delete(query, scope);
                 }
-                return loaded;
-            });
-        } catch (Exception e) {
-            log.error("Exception: {}", e);
-        }
+            }
+            return loaded;
+        });
         return asyncQueryList;
     }
 

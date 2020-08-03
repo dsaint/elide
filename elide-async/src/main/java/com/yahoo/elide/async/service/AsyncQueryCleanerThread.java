@@ -9,6 +9,7 @@ import com.yahoo.elide.Elide;
 import com.yahoo.elide.async.models.AsyncQuery;
 import com.yahoo.elide.async.models.QueryStatus;
 import com.yahoo.elide.core.EntityDictionary;
+import com.yahoo.elide.core.filter.dialect.ParseException;
 import com.yahoo.elide.core.filter.dialect.RSQLFilterDialect;
 import com.yahoo.elide.core.filter.expression.FilterExpression;
 
@@ -56,8 +57,8 @@ public class AsyncQueryCleanerThread implements Runnable {
             FilterExpression filter = filterParser.parseFilterExpression(filterExpression,
                     AsyncQuery.class, false);
             asyncQueryDao.deleteAsyncQueryAndResultCollection(filter);
-        } catch (Exception e) {
-            log.error("Exception: {}", e);
+        } catch (ParseException e) {
+            log.error("ParseException: {}", e);
         }
 
     }
@@ -77,8 +78,8 @@ public class AsyncQueryCleanerThread implements Runnable {
             FilterExpression filter = filterParser.parseFilterExpression(filterExpression,
                     AsyncQuery.class, false);
             asyncQueryDao.updateStatusAsyncQueryCollection(filter, QueryStatus.TIMEDOUT);
-        } catch (Exception e) {
-            log.error("Exception: {}", e);
+        } catch (ParseException e) {
+            log.error("ParseException: {}", e);
         }
     }
 
