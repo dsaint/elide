@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -64,8 +65,9 @@ public class AsyncQueryCancelThread implements Runnable {
 
             TransactionRegistry transactionRegistry = elide.getTransactionRegistry();
             Map<UUID, DataStoreTransaction> runningTransactionMap = transactionRegistry.getRunningTransactions();
-            String filterExpressionStr = "status=in=(" + QueryStatus.PROCESSING.toString() + ","
-                    + QueryStatus.QUEUED.toString() + "," + QueryStatus.CANCELLED.toString() + ")";
+            String filterExpressionStr = "status=in=(" + QueryStatus.CANCELLED.toString() + ","
+                    + QueryStatus.PROCESSING.toString() + ","
+                    + QueryStatus.QUEUED.toString() + ")";
             FilterExpression filterExpression = filterParser.parseFilterExpression(filterExpressionStr,
                     AsyncQuery.class, false);
             Collection<AsyncQuery> asyncQueryCollection = asyncQueryDao.getActiveAsyncQueryCollection(filterExpression);
@@ -89,17 +91,10 @@ public class AsyncQueryCancelThread implements Runnable {
                                transactionRegistry.getRunningTransaction(tx), null, queryParams,
                                tx, elide.getElideSettings());
                        transactionRegistry.getRunningTransaction(tx).cancel(scope);
-                            /*
-                             * String filterRequestIdStr = "requestId=='"+tx+"';"; FilterExpression
-                             * filterExpressionRequestId =
-                             * filterParser.parseFilterExpression(filterRequestIdStr, AsyncQuery.class,
-                             * false);
-                             * asyncQueryDao.getAsyncQuery(filterExpressionRequestId).setStatus(QueryStatus.
-                             * CANCEL_COMPLETED);
-                             */
-                       asyncQueryCollection.stream().filter(query -> query.getRequestId() == tx)
-                             .iterator().next().setStatus(QueryStatus.CANCEL_COMPLETED);
-
+                       List<AsyncQuery> asyncQueryList = asyncQueryCollection.stream()
+                               .filter(query -> query.getRequestId().equals(tx)).collect(Collectors.toList());
+                       asyncQueryList.forEach(asyncQuery -> asyncQueryDao.updateStatus(asyncQuery.getId(),
+                             QueryStatus.CANCEL_COMPLETE));
                });
 
         } catch (ParseException e) {
