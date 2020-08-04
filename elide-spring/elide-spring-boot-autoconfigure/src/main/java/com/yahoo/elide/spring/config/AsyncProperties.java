@@ -21,7 +21,7 @@ public class AsyncProperties extends ControllerProperties {
     /**
      * Default max query run time.
      */
-    private int maxRunTimeSeconds = 60;
+    private int maxRunTimeSeconds = 3600;
 
     /**
      * Whether or not the cleanup is enabled.
