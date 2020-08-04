@@ -90,7 +90,7 @@ public class ElideStandaloneDisableAggStoreTest extends ElideStandaloneTest {
             }
 
             @Override
-            public Integer getAsyncMaxRunTimeMinutes() {
+            public Integer getAsyncMaxRunTimeSeconds() {
                 return 30;
             }
 
