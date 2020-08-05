@@ -381,7 +381,7 @@
           },
           {
             "properties": {
-              "extends": {
+              "extend": {
                 "title": "Table Extends",
                 "description": "Extends another logical table.",
                 "type": "string",
@@ -390,8 +390,7 @@
             },
             "required": [
               "name",
-              "extends",
-              "dimensions"
+              "extend"
             ]
           }
         ]

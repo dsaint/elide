@@ -78,6 +78,7 @@ public class DynamicConfigSchemaValidatorTest {
             "/tables/valid/table.hjson",
             "/models/tables/table1.hjson",
             "/models/tables/table2.hjson",
+            "/models/tables/table3.hjson",
             "/models_missing/tables/table1.hjson"})
     public void testValidTableSchema(String resource) throws Exception {
         String jsonConfig = loadHjsonFromClassPath(resource);
