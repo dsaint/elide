@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -65,12 +66,13 @@ public class AsyncQueryCancelThread implements Runnable {
 
             TransactionRegistry transactionRegistry = elide.getTransactionRegistry();
             Map<UUID, DataStoreTransaction> runningTransactionMap = transactionRegistry.getRunningTransactions();
-            String filterExpressionStr = "status=in=(" + QueryStatus.CANCELLED.toString() + ","
+            String filterByStatus = "status=in=(" + QueryStatus.CANCELLED.toString() + ","
                     + QueryStatus.PROCESSING.toString() + ","
                     + QueryStatus.QUEUED.toString() + ")";
-            FilterExpression filterExpression = filterParser.parseFilterExpression(filterExpressionStr,
+            FilterExpression fltStatusExpression = filterParser.parseFilterExpression(filterByStatus,
                     AsyncQuery.class, false);
-            Collection<AsyncQuery> asyncQueryCollection = asyncQueryDao.getActiveAsyncQueryCollection(filterExpression);
+            Collection<AsyncQuery> asyncQueryCollection =
+                    asyncQueryDao.getActiveAsyncQueryCollection(fltStatusExpression);
 
             Set<UUID> runningTransactions = runningTransactionMap.keySet();
 
@@ -83,20 +85,26 @@ public class AsyncQueryCancelThread implements Runnable {
 
             Set<UUID> queriesToCancel = Sets.intersection(runningTransactions, asyncTransactions);
 
+            List<String> asyncQueryList = new ArrayList<String>();
             queriesToCancel.stream()
                .forEach((tx) -> {
-                       JsonApiDocument jsonApiDoc = new JsonApiDocument();
-                       MultivaluedMap<String, String> queryParams = new MultivaluedHashMap<String, String>();
-                       RequestScope scope = new RequestScope("query", NO_VERSION, jsonApiDoc,
-                               transactionRegistry.getRunningTransaction(tx), null, queryParams,
-                               tx, elide.getElideSettings());
-                       transactionRegistry.getRunningTransaction(tx).cancel(scope);
-                       List<AsyncQuery> asyncQueryList = asyncQueryCollection.stream()
-                               .filter(query -> query.getRequestId().equals(tx)).collect(Collectors.toList());
-                       asyncQueryList.forEach(asyncQuery -> asyncQueryDao.updateStatus(asyncQuery.getId(),
-                             QueryStatus.CANCEL_COMPLETE));
+                   JsonApiDocument jsonApiDoc = new JsonApiDocument();
+                   MultivaluedMap<String, String> queryParams = new MultivaluedHashMap<String, String>();
+                   RequestScope scope = new RequestScope("query", NO_VERSION, jsonApiDoc,
+                           transactionRegistry.getRunningTransaction(tx), null, queryParams,
+                           tx, elide.getElideSettings());
+                   transactionRegistry.getRunningTransaction(tx).cancel(scope);
+                   List<String> cancelledQuery = asyncQueryCollection.stream().filter(query
+                           -> query.getRequestId().equals(tx)).map(AsyncQuery::getId).collect(Collectors.toList());
+                   asyncQueryList.addAll(cancelledQuery);
                });
-
+            if (!queriesToCancel.isEmpty()) {
+                String cancelledQueryStr = String.join(",", asyncQueryList);
+                String filterById = "id=in=(" + cancelledQueryStr + ")";
+                FilterExpression fltIdExpression = filterParser.parseFilterExpression
+                        (filterById, AsyncQuery.class, false);
+                asyncQueryDao.updateStatusAsyncQueryCollection(fltIdExpression, QueryStatus.CANCEL_COMPLETE);
+            }
         } catch (ParseException e) {
             log.error("ParseException: {}", e);
         }
