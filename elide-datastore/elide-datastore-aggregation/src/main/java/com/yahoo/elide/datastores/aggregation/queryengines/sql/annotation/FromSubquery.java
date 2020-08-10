@@ -25,4 +25,10 @@ public @interface FromSubquery {
      * @return The SQL subquery.
      */
     String sql();
+
+    /**
+     * DB Connection Name for this query
+     * @return String DB Connection Name
+     */
+    String type() default "";
 }
